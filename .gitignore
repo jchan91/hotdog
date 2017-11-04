@@ -1,0 +1,48 @@
+# User-specific files
+*.suo
+*.user
+*.opendb
+*.db
+*.sdf
+*.tmp
+
+# Build directories
+bin/
+obj/
+ipch/
+**/packages/
+**/TestResults
+
+# VS
+**/.vs
+**/.vscode
+
+# Binary files
+*.dll
+*.exe
+*.bin
+*.lib
+*.pfx
+*.pdb
+*.log
+*.tlog
+*.obj
+*.pch
+*.idb
+*.png
+*.jpeg
+*.jpg
+*.aps
+*.dbmdl
+*.i
+*.png
+*.bmp
+*.nupkg
+*.pyc
+
+*.orig
+
+# sqlProj files
+*dbmdl
+*jfm
+*.vspx
