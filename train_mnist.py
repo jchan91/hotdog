@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def download_mnist():
@@ -59,6 +60,12 @@ def train_simple(mnist_data):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     print(sess.run(accuracy, {x: mnist_data.test.images, y_: mnist_data.test.labels}))
 
+    # display
+    nW = sess.run(W)
+    W0 = np.reshape(nW[:, 0], (28, 28))
+    plt.imshow(W0)
+    plt.show()
+
 
 def train_estimator():
     feature_columns = [tf.feature_columns.numeric_column('x', shape=[784])]
@@ -70,4 +77,3 @@ def train_estimator():
 if __name__ == "__main__":
     mnist_data = download_mnist()
     train_simple(mnist_data)
-
