@@ -67,13 +67,6 @@ def train_simple(mnist_data):
     plt.show()
 
 
-def train_estimator():
-    feature_columns = [tf.feature_columns.numeric_column('x', shape=[784])]
-
-    estimator = tf.estimator.LinearRegressor(
-        feature_columns=feature_columns)
-
-
 if __name__ == "__main__":
     mnist_data = download_mnist()
     train_simple(mnist_data)
