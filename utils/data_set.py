@@ -4,6 +4,7 @@ import urllib.request
 from urllib.parse import urlparse
 from PIL import Image
 import numpy as np
+from multiprocessing.pool import ThreadPool
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -45,6 +46,65 @@ def open_data_set(
         downloads_remaining -= 1
         print('Downloads remaining: %d' % downloads_remaining)
     print('Downloaded %d' % download_count)
+
+
+def download_image_net_p(
+    url,
+    dst_dir_path
+):
+    if isinstance(url, list):
+        target_urls = url
+    else:    
+        urls_req = urllib.request.urlopen(url)
+        target_urls = urls_req.read().split()
+
+    pool = ThreadPool(32)
+    pool.map(lambda u: download_url(u, dst_dir_path), target_urls)
+
+    print('Attempted %d downloads' % len(target_urls))
+
+
+def download_image_net(
+    url,
+    dst_dir_path
+):
+    if isinstance(url, list):
+        target_urls = url
+    else:   
+        urls_req = urllib.request.urlopen(url)
+        target_urls = urls_req.read().split()
+
+    download_count = 0
+    downloads_remaining = len(target_urls)
+    for target_url in target_urls:
+        download_url(
+            target_url,
+            dst_dir_path)
+        download_count += 1
+        downloads_remaining -= 1
+        print('Downloads remaining: %d' % downloads_remaining)
+    print('Downloaded %d' % download_count)
+
+
+def download_url(
+    target_url,
+    dst_dir_path
+):
+    url = urlparse(target_url.decode('UTF-8'))
+    dst_name = os.path.basename(url.path)
+    dst_path = os.path.join(dst_dir_path, dst_name)
+
+    try:
+        urllib.request.urlretrieve(url.geturl(), dst_path)
+    except urllib.error.HTTPError as e:
+        print(str(e))
+        # pass
+    except urllib.error.URLError as e:
+        print(str(e))
+        # pass
+    except Exception as e:
+        print(str(e))
+        # pass
 
 
 def clean_data(
