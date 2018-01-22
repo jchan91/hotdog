@@ -49,3 +49,4 @@ ipch/
 
 # Training Data
 MNIST_data
+hotdog_data
