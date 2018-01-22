@@ -4,6 +4,7 @@ import numpy as np
 import glob
 from PIL import Image
 import os
+from .models import commaai
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -87,9 +88,22 @@ if __name__ == '__main__':
     data_path = 'C:/data/'
 
     img_size = 128
+
+    # Load data
     X_all, y_all = load_data(
         data_path,
         img_size,
         class_size=-1)  # TODO: Implement image augmentation and then use class_size > 0
 
-    
+    # Split into train/test sets
+    rand_state = np.random.randint(0, 100)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_all,
+        y_all,
+        test_size=0.2,
+        random_state=rand_state)
+
+    inputShape = (128, 128, 1)
+    model = commaai.comma_ai_model(inputShape)
+    model.compile('adam', 'categorical_crossentropy', ['accuracy'])
+    history = model.fit(X_train, y_train, nb_epoch=10, validation_split=0.1)
