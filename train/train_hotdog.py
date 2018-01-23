@@ -4,7 +4,8 @@ import numpy as np
 import glob
 from PIL import Image
 import os
-from .models import commaai
+from keras.utils.np_utils import to_categorical
+from ..models import commaai
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -22,10 +23,10 @@ def load_image(img_path, img_size):
     img = Image.open(img_path)
     img = img.resize(img_size, resample=Image.BILINEAR)
     img = img.convert('L')  # Convert RGB -> gray
-    return np.array(img)
+    return np.expand_dims(np.array(img), axis=2)  # Make the shape -> (sz, sz, 1)
 
 
-def load_img_class(class_paths, load_images, class_size, img_size):
+def load_img_class(class_paths, class_label, class_size, img_size):
     '''
     Loads all the image paths in class_paths into memory, and assign
     'class_label' to that image.
@@ -41,15 +42,15 @@ def load_img_class(class_paths, load_images, class_size, img_size):
     for img_path in class_paths:
         img = load_image(img_path, img_size)        
         x.append(img)
-        y.append(load_images)
+        y.append(class_label)
         
     while len(x) < class_size:
         randIdx = np.random.randint(0, len(class_paths))
         img = load_image(class_paths[randIdx], img_size)
         x.append(img)
-        y.append(load_images)
+        y.append(class_label)
         
-    return x, y
+    return x, to_categorical(y)
 
 
 def load_data(
@@ -84,6 +85,29 @@ def load_data(
     return X, y
 
 
+def train(X_all, y_all):
+    # Split into train/test sets
+    rand_state = np.random.randint(0, 100)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_all,
+        y_all,
+        test_size=0.2,
+        random_state=rand_state)
+
+    # Train
+    inputShape = (128, 128, 1)
+    model = commaai.comma_ai_model(inputShape)
+    model.compile('adam', 'categorical_crossentropy', ['accuracy'])
+    history = model.fit(X_train, y_train, nb_epoch=10, validation_split=0.1)
+
+    # Validate
+    metrics = model.evaluate(X_test, y_test)
+    for metric_i in range(len(model.metrics_names)):
+        metric_name = model.metrics_names[metric_i]
+        metric_value = metrics[metric_i]
+        print('{}: {}'.format(metric_name, metric_value))
+
+
 if __name__ == '__main__':
     data_path = 'C:/data/'
 
@@ -95,15 +119,4 @@ if __name__ == '__main__':
         img_size,
         class_size=-1)  # TODO: Implement image augmentation and then use class_size > 0
 
-    # Split into train/test sets
-    rand_state = np.random.randint(0, 100)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_all,
-        y_all,
-        test_size=0.2,
-        random_state=rand_state)
-
-    inputShape = (128, 128, 1)
-    model = commaai.comma_ai_model(inputShape)
-    model.compile('adam', 'categorical_crossentropy', ['accuracy'])
-    history = model.fit(X_train, y_train, nb_epoch=10, validation_split=0.1)
+    train(X_all, y_all)
