@@ -6,7 +6,8 @@ import numpy as np
 from PIL import Image
 from PIL import ImageFilter
 from keras.utils.np_utils import to_categorical
-import hotdog.models
+from multiprocessing.pool import ThreadPool
+from  hotdog import models
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -55,19 +56,31 @@ def load_image_class(class_paths, class_label, class_size, img_size):
     x = []
     y = []
 
-    for img_path in class_paths:
+    # Initialize a thread pool to speed things up
+    pool = ThreadPool(16)
+    def load_original_image(img_path):
         img_pil = Image.open(img_path)
         img_np = convert_pil_image_to_nparray(img_pil, img_size)
         x.append(img_np)
         y.append(class_label)
 
-    while len(x) < class_size:
-        randIdx = np.random.randint(0, len(class_paths))
-        img_pil = Image.open(class_paths[randIdx])
+    def add_augmented_image(class_path_idx):
+        img_pil = Image.open(class_paths[class_path_idx])
         img_pil = generate_augmented_image(img_pil)
         img_np = convert_pil_image_to_nparray(img_pil, img_size)
         x.append(img_np)
         y.append(class_label)
+
+    print('Loading original images...')
+    pool.map(lambda p: load_original_image(p), class_paths)
+
+    if len(x) < class_size:
+        print('Augmenting image set...')
+        random_indices = np.random.randint(
+            0,
+            high=len(x),
+            size=class_size - len(x))
+        pool.map(lambda i: add_augmented_image(i), random_indices)
 
     return x, y
 
