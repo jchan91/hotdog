@@ -1,11 +1,11 @@
+import os
+import glob
 import logging
 from sklearn.model_selection import train_test_split
 import numpy as np
-import glob
 from PIL import Image
-import os
 from keras.utils.np_utils import to_categorical
-from ..models import commaai
+import hotdog.models
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -38,25 +38,25 @@ def load_img_class(class_paths, class_label, class_size, img_size):
     '''
     x = []
     y = []
-    
+
     for img_path in class_paths:
-        img = load_image(img_path, img_size)        
+        img = load_image(img_path, img_size)
         x.append(img)
         y.append(class_label)
-        
+
     while len(x) < class_size:
         randIdx = np.random.randint(0, len(class_paths))
         img = load_image(class_paths[randIdx], img_size)
         x.append(img)
         y.append(class_label)
-        
+
     return x, y
 
 
 def load_data(
-    data_dir_path,
-    img_size,
-    class_size
+        data_dir_path,
+        img_size,
+        class_size
 ):
     '''
     Loads all hotdog/non-hotdog data from data_dir_path into memory. Will
@@ -72,24 +72,16 @@ def load_data(
     nonhotdogs_path_pattern = os.path.join(data_dir_path, 'not-hotdog/**/*.jpg')
     hotdogs = glob.glob(hotdogs_path_pattern, recursive=True)
     notHotdogs = glob.glob(nonhotdogs_path_pattern, recursive=True)
-    
+
     img_size_2d = (img_size, img_size)
     xHotdog, yHotdog = load_img_class(hotdogs, 0, class_size, img_size_2d)
     xNotHotdog, yNotHotdog = load_img_class(notHotdogs, 1, class_size, img_size_2d)
     print("There are", len(xHotdog), "hotdog images")
     print("There are", len(xNotHotdog), "not hotdog images")
-    
-    X = np.array(xHotdog + xNotHotdog)
-    y = np.array(yHotdog + yNotHotdog)
-    
-    return X, to_categorical(y)
 
+    X_all = np.array(xHotdog + xNotHotdog)
+    y_all = to_categorical(np.array(yHotdog + yNotHotdog))
 
-def train(
-    X_all,
-    y_all,
-    img_shape):
-    # Split into train/test sets
     rand_state = np.random.randint(0, 100)
     X_train, X_test, y_train, y_test = train_test_split(
         X_all,
@@ -97,19 +89,31 @@ def train(
         test_size=0.2,
         random_state=rand_state)
 
-    # Train
-    model = commaai.comma_ai_model(img_shape)
+    return X_train, X_test, y_train, y_test
+
+
+def train(
+        X_train,
+        y_train,
+        img_shape=(128, 128, 1),
+        model=None):
+
+    if model is None:
+        model = models.test_model(img_shape)
     model.compile('adam', 'categorical_crossentropy', ['accuracy'])
     history = model.fit(X_train, y_train, nb_epoch=10, validation_split=0.1)
+    return model, history
 
-    # Validate
+
+def evaluate(
+        model,
+        X_test,
+        y_test):
     metrics = model.evaluate(X_test, y_test)
     for metric_i in range(len(model.metrics_names)):
         metric_name = model.metrics_names[metric_i]
         metric_value = metrics[metric_i]
         print('{}: {}'.format(metric_name, metric_value))
-
-    return model, history
 
 
 def run():
@@ -118,16 +122,23 @@ def run():
     img_size = 128
 
     # Load data
-    X_all, y_all = load_data(
+    X_train, X_test, y_train, y_test = load_data(
         data_path,
         img_size,
         class_size=-1)  # TODO: Implement image augmentation and then use class_size > 0
 
-    return train(
-        X_all,
-        y_all,
+    model, history = train(
+        X_train,
+        y_train,
         (img_size, img_size, 1))
+
+    evaluate(
+        model,
+        X_test,
+        y_test)
+
+    return model, history
 
 
 if __name__ == '__main__':
-    run();
+    run()
