@@ -3,6 +3,7 @@ from multiprocessing.pool import ThreadPool
 import numpy as np
 from PIL import Image
 from PIL import ImageFilter
+from PIL import ImageOps
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -29,12 +30,7 @@ def generate_augmented_image(img):
     return img
 
 
-def convert_pil_image_to_nparray(
-        img,
-        img_size
-):
-    img = img.resize(img_size, resample=Image.BILINEAR)
-    img = img.convert('L')  # Convert RGB -> gray
+def convert_pil_image_to_nparray(img):
     return np.expand_dims(np.array(img), axis=2)  # Make the shape -> (sz, sz, 1)
 
 
@@ -51,31 +47,42 @@ def load_image_class(class_paths, class_label, class_size, img_size):
     x = []
     y = []
 
-    # Initialize a thread pool to speed things up
-    pool = ThreadPool(16)
-    def load_original_image(img_path):
-        img_pil = Image.open(img_path)
-        img_np = convert_pil_image_to_nparray(img_pil, img_size)
-        x.append(img_np)
-        y.append(class_label)
-
-    def add_augmented_image(class_path_idx):
-        img_pil = Image.open(class_paths[class_path_idx])
-        img_pil = generate_augmented_image(img_pil)
-        img_np = convert_pil_image_to_nparray(img_pil, img_size)
-        x.append(img_np)
-        y.append(class_label)
-
-    print('Loading original images...')
-    pool.map(lambda p: load_original_image(p), class_paths)
-
-    if len(x) < class_size:
-        print('Augmenting image set...')
-        random_indices = np.random.randint(
-            0,
-            high=len(x),
-            size=class_size - len(x))
-        pool.map(lambda i: add_augmented_image(i), random_indices)
+    # Define the operations we'll do on an image class
+    def to_grayscale(img_pil):
+        return img_pil.convert('L')  # Convert RGB -> gray
         
+    def histogram_equalize_image(img_pil):
+        return ImageOps.equalize(img_pil)
 
+    def resize(img_pil):
+        return img_pil.resize(img_size, resample=Image.BILINEAR)
+
+    def append_class_example(img_pil):
+        x.append(convert_pil_image_to_nparray(img_pil))
+        y.append(class_label)
+
+    # Initialize a thread pool to speed things up
+    # pool = ThreadPool(16)
+    imgs_pil = []
+    print('Loading original images...')
+    for img_path in class_paths:
+        imgs_pil.append(Image.open(img_path))
+
+    if len(imgs_pil) < class_size:
+        print('Augmenting image set...')
+        random_indicies = np.random.randint(
+            0,
+            high=len(imgs_pil),
+            size=class_size - len(imgs_pil))
+        for idx in random_indicies:
+            imgs_pil.append(generate_augmented_image(imgs_pil[idx]))
+
+    print('Normalizing images of class...')
+    for img_pil in imgs_pil:
+        img_pil = to_grayscale(img_pil)
+        img_pil = resize(img_pil)
+        img_pil = histogram_equalize_image(img_pil)
+        append_class_example(img_pil)
+
+    # pool.map(lambda p: load_original_image(p), class_paths)
     return x, y
