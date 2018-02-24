@@ -1,9 +1,12 @@
 import logging
+import matplotlib
 import matplotlib.pyplot as plt
+from hotdog.utils import utils
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+utils.configure_logger(logger)
+
 
 class ImageViewer(object):
     @staticmethod
@@ -16,12 +19,17 @@ class ImageViewer(object):
             else:
                 raise NotImplementedError('Multi-channel not yet supported')
 
-        ImageViewer.__show_np(img_np)
+        ImageViewer.__show_L_np(img_np)
+
 
     @staticmethod
-    def __show_np(img_np):
+    def __show_L_np(img_np):
         ''' Uses matplotlib to show image. Assumes shape (rows, cols) '''
         assert(len(img_np.shape) == 2)
-        plt.imshow(img_np)
-        plt.show()
+        fig = plt.figure()
+        fig.clf()
+        ax = fig.add_subplot(1, 1, 1)
+        ax.cla()
+        ax.imshow(img_np, cmap='gray')
+        fig.show()
 

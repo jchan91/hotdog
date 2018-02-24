@@ -8,11 +8,14 @@ from hotdog import models
 from hotdog.utils import transform
 from hotdog.utils import utils
 
+from memory_profiler import profile
+
 
 logger = logging.getLogger(__name__)
 utils.configure_logger(logger)
 
 
+@profile
 def load_data(
         data_dir_path,
         img_size,
@@ -77,7 +80,7 @@ def evaluate(
 
 
 def run():
-    data_path = 'C:/data/'
+    data_path = 'C:/data/hotdog_training'
 
     img_size = 128
 
@@ -99,6 +102,16 @@ def run():
 
     return model, history
 
+
+def load_data_test():
+    data_path = 'c:/data/hotdog_training'
+    img_size = 128
+
+    load_data(
+        data_path,
+        img_size,
+        200)
+    
 
 if __name__ == '__main__':
     run()
