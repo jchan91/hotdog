@@ -5,10 +5,11 @@ import logging
 from keras.models import Sequential
 from keras.layers import Activation, Dense, Dropout, Flatten, Lambda, ELU
 from keras.layers.convolutional import Conv2D
+from hotdog.utils import utils
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+utils.configure_logger(logger)
 
 
 def comma_ai_model(input_shape=(128, 128, 1)):

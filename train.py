@@ -6,10 +6,11 @@ import numpy as np
 from keras.utils.np_utils import to_categorical
 from hotdog import models
 from hotdog.utils import transform
+from hotdog.utils import utils
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+utils.configure_logger(logger)
 
 
 def load_data(
@@ -35,8 +36,8 @@ def load_data(
     img_size_2d = (img_size, img_size)
     xHotdog, yHotdog = transform.load_image_class(hotdogs, 0, class_size, img_size_2d)
     xNotHotdog, yNotHotdog = transform.load_image_class(notHotdogs, 1, class_size, img_size_2d)
-    print("There are", len(xHotdog), "hotdog images")
-    print("There are", len(xNotHotdog), "not hotdog images")
+    logger.info("There are %d hotdog images", len(xHotdog))
+    logger.info("There are %d not hotdog images", len(xNotHotdog))
 
     X_all = np.array(xHotdog + xNotHotdog)
     y_all = to_categorical(np.array(yHotdog + yNotHotdog))
@@ -72,7 +73,7 @@ def evaluate(
     for metric_i in range(len(model.metrics_names)):
         metric_name = model.metrics_names[metric_i]
         metric_value = metrics[metric_i]
-        print('{}: {}'.format(metric_name, metric_value))
+        logger.info('%s: %f', metric_name, metric_value)
 
 
 def run():

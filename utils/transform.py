@@ -4,10 +4,11 @@ import numpy as np
 from PIL import Image
 from PIL import ImageFilter
 from PIL import ImageOps
+from hotdog.utils import utils
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+utils.configure_logger(logger)
 
 
 def generate_augmented_image(img):
@@ -64,12 +65,12 @@ def load_image_class(class_paths, class_label, class_size, img_size):
     # Initialize a thread pool to speed things up
     # pool = ThreadPool(16)
     imgs_pil = []
-    print('Loading original images...')
+    logger.info('Loading original images...')
     for img_path in class_paths:
         imgs_pil.append(Image.open(img_path))
 
     if len(imgs_pil) < class_size:
-        print('Augmenting image set...')
+        logger.info('Augmenting image set...')
         random_indicies = np.random.randint(
             0,
             high=len(imgs_pil),
@@ -77,7 +78,7 @@ def load_image_class(class_paths, class_label, class_size, img_size):
         for idx in random_indicies:
             imgs_pil.append(generate_augmented_image(imgs_pil[idx]))
 
-    print('Normalizing images of class...')
+    logger.info('Normalizing images of class...')
     for img_pil in imgs_pil:
         img_pil = to_grayscale(img_pil)
         img_pil = resize(img_pil)
