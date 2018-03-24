@@ -1,5 +1,4 @@
 import logging
-from multiprocessing.pool import ThreadPool
 import numpy as np
 import skimage.transform
 import skimage.color
@@ -8,30 +7,20 @@ import skimage.exposure
 from scipy import ndimage
 import scipy.interpolate
 from hotdog.utils import utils
-from memory_profiler import profile
 
 
 logger = logging.getLogger(__name__)
 utils.configure_logger(logger)
 
 
-@profile
 def generate_augmented_image(img):
     # blur the image
-    # result = skimage.filters.gaussian(img, sigma=25) # TODO Make this more mem efficient
-    result = ndimage.gaussian_filter(
-        img,
-        sigma=1.5)
-
+    result = skimage.filters.gaussian(img, sigma=1.5)
+    
     # random rotation
     angle = np.random.randint(0, 360)
-    # img = skimage.transform.rotate(img, angle)
-    ndimage.rotate(
-        result,
-        angle,
-        reshape=False,
-        output=result)
-
+    result = skimage.transform.rotate(result, angle)
+    
     return result
 
 
@@ -88,7 +77,6 @@ def histogram_equalize_image(
     return ret_val
 
 
-@profile
 def load_image_class(class_paths, class_label, class_size, img_size):
     '''
     Loads all the image paths in class_paths into memory, and assign
@@ -109,7 +97,6 @@ def load_image_class(class_paths, class_label, class_size, img_size):
         x.append(img_to_class_sample(img))
         y.append(class_label)
 
-    # Initialize a thread pool to speed things up
     imgs = []
     logger.info('Loading original images...')
     for img_path in class_paths:
@@ -128,42 +115,11 @@ def load_image_class(class_paths, class_label, class_size, img_size):
 
     logger.info('Normalizing images of class...')
     for img in imgs:
-        # img = to_grayscale(img)
+        img = to_grayscale(img)
         img = resize(img)
-        # histogram_equalize_image(img, output=img)
         img = skimage.exposure.equalize_hist(img)
         
         append_class_example(img)
 
     return x, y
-
-
-import os
-import glob
-from scipy import ndimage
-from hotdog.utils.viewer import ImageViewer
-import matplotlib.pyplot as plt
-
-
-def generate_augmented_image_test():
-    img_p = 'c:/data/hotdog_debug/hotdog/chili.jpg'
-    img = ndimage.imread(img_p, mode='L')
-    aug = generate_augmented_image(img)
-
-
-def load_image_class_test():
-    data_dir_path = 'C:/data/hotdog_training'
-    paths_pattern = os.path.join(data_dir_path, 'hotdog/**/*.jpg')
-    paths = glob.glob(paths_pattern, recursive=True)
-    desired_class_size = 200
-    img_size = (128, 128)
-    load_image_class(
-        paths,
-        0,
-        desired_class_size,
-        img_size)
-
-
-if __name__ == '__main__':
-    load_image_class_test()
 
