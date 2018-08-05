@@ -7,6 +7,8 @@ import skimage.exposure
 from scipy import ndimage
 import scipy.interpolate
 from hotdog.utils import utils
+from PIL import Image
+from PIL import ImageOps
 
 
 logger = logging.getLogger(__name__)
@@ -75,6 +77,29 @@ def histogram_equalize_image(
 
     ret_val = output
     return ret_val
+
+
+def normalize_image(
+    src_image_path,
+    dst_image_path,
+    image_size):
+    '''
+    Returns nothing. Applies several image operations to any dataset image
+    (augment or not) to ensure they are ready to be fed into the classifier
+    '''
+    # image = ndimage.imread(src_image_path, mode='L')
+    # image = skimage.transform.resize(image, image_size)
+    # image = skimage.exposure.equalize_hist(image)
+
+    logger.info('Loading %s...', src_image_path)
+    image = Image.open(src_image_path)
+    if image.mode == 'RGB':
+        logger.info('Convert to grayscale...')
+        image = image.convert('L')
+    image = image.resize(image_size, resample=Image.BILINEAR)
+    image = ImageOps.equalize(image)
+    image.save(dst_image_path, "JPEG")
+
 
 
 def load_image_class(class_paths, class_label, class_size, img_size):
