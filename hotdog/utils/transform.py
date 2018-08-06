@@ -9,21 +9,48 @@ import scipy.interpolate
 from hotdog.utils import utils
 from PIL import Image
 from PIL import ImageOps
+from PIL import ImageFilter
 
 
 logger = logging.getLogger(__name__)
 utils.configure_logger(logger)
 
 
-def generate_augmented_image(img):
-    # blur the image
-    result = skimage.filters.gaussian(img, sigma=1.5)
+# def generate_augmented_image(img):
+#     # blur the image
+#     result = skimage.filters.gaussian(img, sigma=1.5)
     
-    # random rotation
+#     # random rotation
+#     angle = np.random.randint(0, 360)
+#     result = skimage.transform.rotate(result, angle)
+    
+#     return result
+
+
+def generate_augmented_image(
+    src_image_path,
+    dst_image_path):
+    '''
+    Returns nothing.
+    
+    Generates an image intended to augment an image dataset.
+    '''
+    # Open image
+    logger.info('Loading image %s as augmentation example...', src_image_path)
+    image = Image.open(src_image_path)
+
+    # Blur image
+    blur_sigma = 3
+    image = image.filter(ImageFilter.GaussianBlur(blur_sigma))
+    logger.info('Blurred image with simga: %f', blur_sigma)
+
+    # Random rotation
     angle = np.random.randint(0, 360)
-    result = skimage.transform.rotate(result, angle)
-    
-    return result
+    image = image.rotate(angle)
+    logger.info('Rotated image %d degrees', angle)
+
+    # Save image
+    image.save(dst_image_path)
 
 
 def img_to_class_sample(img):

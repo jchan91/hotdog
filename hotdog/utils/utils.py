@@ -1,4 +1,5 @@
 import logging
+import os
 
 
 def configure_logger(module_logger):
@@ -42,3 +43,17 @@ configure_logger(logger)
 def print_model(model):
     for layer in model.layers:
         logger.info(layer.name)
+
+
+def replace_ext(path, ext):
+    return os.path.splitext(path)[0] + ext
+
+
+def get_filename(path):
+    _, tail = os.path.split(path)
+    return tail
+
+
+def get_filename_without_ext(path):
+    _, tail = os.path.split(path)
+    return replace_ext(tail, '')
