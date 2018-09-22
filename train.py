@@ -16,73 +16,13 @@ logger = logging.getLogger(__name__)
 utils.configure_logger(logger)
 
 
-def get_dst_path(
-    src_path,
-    dst_dir_path
-    dst_suffix):
-    src_name = get_filename_without_ext(src_path)
-    dst_name = src_name + dst_suffix
-    return os.path.join(dst_dir_path, dst_name)
 
-
-def generate_dataset(
-    src_data_dir_path,
-    dst_data_dir_path,
-    image_size,
-    class_size):
-    '''
-    Returns nothing.
-
-    Takes an image dataset and prepares it as a training dataset. Some operations include
-    resizing, rgb -> gray, augmentation, etc.
-    '''
-    image_size_2d = (image_size, image_size)
-    image_paths_pattern = os.path.join(src_data_dir_path, '*.jpg')
-    image_paths = glob.glob(image_paths_pattern, recursive=True)
-
-    # Augment the source dataset
-    # Choose random images from the dataset to act as source images
-    # Apply images operations on those example images to generate augmentation
-    temp_dst_images_dir_path = dst_data_dir_path + '-temp'
-    if not os.exists(temp_dst_images_dir_path):
-        os.makedirs(temp_dst_images_dir_path)
-
-    logger.info('Augmenting dataset to %s...', temp_dst_images_dir_path)
-    random_indices = np.random.randint(
-        0,
-        high=len(image_paths),
-        size=class_size - len(image_paths))
-    for idx in random_indices:
-        src_image_path = image_paths[idx]
-        dst_image_path = get_dst_path(
-            src_image_path,
-            temp_dst_images_dir_path,
-            '-augmented.jpg')
-        generate_augmented_image(
-            src_image_path,
-            dst_image_path)
-    
-    # Normalize images in preparation to be fed into classifier
-    # Will run on all images, and augmented images
-    augmented_image_paths_pattern = os.path.join(temp_dst_images_dir_path, '*.jpg')
-    augmented_image_paths = glob.glob(augmented_image_paths_pattern)
-    for augmented_image in augmented_image_paths:
-        dst_image_path = normalize_image(
-            augmented_image,
-            temp_dst_images_dir_path,
-            '-normalized.jpg')
-
-    # TODO Normalize the originals too
-
-    # Done
-    # Rename temp dst dir to real dst dir
-    shutil.move(temp_dst_images_dir_path, dst_data_dir_path)
 
 
 def load_data(
-        data_dir_path,
-        img_size,
-        class_size
+    data_dir_path,
+    img_size,
+    class_size
 ):
     '''
     Loads all hotdog/non-hotdog data from data_dir_path into memory. Will

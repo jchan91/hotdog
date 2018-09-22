@@ -57,3 +57,8 @@ def get_filename(path):
 def get_filename_without_ext(path):
     _, tail = os.path.split(path)
     return replace_ext(tail, '')
+
+
+def ensure_dir_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
