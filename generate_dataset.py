@@ -3,6 +3,7 @@ import glob
 import logging
 import shutil
 import datetime
+import argparse
 import numpy as np
 from hotdog.utils import transform
 from hotdog.utils import utils
@@ -25,11 +26,12 @@ def get_dst_path(
     return os.path.join(dst_dir_path, dst_name)
 
 
-def generate_dataset(
+def transform_image_folder(
     src_data_dir_path,
     dst_data_dir_path,
     image_size,
-    class_size):
+    class_size,
+    temp_dir_path):
     '''
     Returns nothing.
 
@@ -40,6 +42,8 @@ def generate_dataset(
     '''
     image_paths_pattern = os.path.join(src_data_dir_path, '*.jpg')
     image_paths = glob.glob(image_paths_pattern, recursive=True)
+    if len(image_paths) is 0:
+        return
 
     # Augment the source dataset
     # Choose random images from the dataset to act as source images
@@ -48,8 +52,9 @@ def generate_dataset(
 
     # Save the augmented images to a temporary directory so that we can find
     # them later to be normalized
-    temp_dir_name = 'temp.' + get_current_datetime_str()
-    temp_dst_images_dir_path = os.path.join(dst_data_dir_path, temp_dir_name)
+    src_data_dir_name = utils.get_filename(src_data_dir_path)
+    temp_dir_name = src_data_dir_name + '-temp.' + get_current_datetime_str()
+    temp_dst_images_dir_path = os.path.join(temp_dir_path, temp_dir_name)
     utils.ensure_dir_exists(temp_dst_images_dir_path)
 
     logger.info('Augmenting dataset to %s...', temp_dst_images_dir_path)
@@ -70,6 +75,7 @@ def generate_dataset(
     # Normalize images in preparation to be fed into classifier
     # Will run on all images, and augmented images
     logger.info('Normalize augmented images...')
+    utils.ensure_dir_exists(dst_data_dir_path)
     augmented_image_paths_pattern = os.path.join(temp_dst_images_dir_path, '*.jpg')
     augmented_image_paths = glob.glob(augmented_image_paths_pattern)
     for augmented_image_path in augmented_image_paths:
@@ -99,10 +105,78 @@ def generate_dataset(
     logger.info('Done.')
 
 
+def generate_dataset(
+    src_data_dir_path,
+    dst_data_dir_path,
+    image_size,
+    class_size,
+    temp_dir
+):
+    '''
+    Takes a directory that has training data, and recursively runs
+    transform_image_folder on each folder. Outputs the transformed images
+    into a folder structure that mirrors the input structure
+
+    Returns nothing.
+
+    Input:
+    - src_data_dir_path: Source images
+    e.g.
+    training_data/
+        class0/
+            class0_img0.jpg
+            class0_img1.jpg
+            ...
+        class1/
+            class1_img0.jpg
+            class1_img1.jpg
+    - dst_data_dir_path: Destination for images to be written to
+    - temp_dir: Temporary working directory for this function
+    '''
+    for subdir, _, _ in os.walk(src_data_dir_path):
+        # Transform this directory
+        
+        # src = current directory
+        # dst = <dst_data_dir_path>/<subdir_rel_path>
+        dst_dir_relative_path = os.path.relpath(subdir, src_data_dir_path)
+        dst_dir_path = os.path.join(dst_data_dir_path, dst_dir_relative_path)
+        logger.info('Transforming %s to %s',
+            subdir,
+            dst_dir_path)
+        transform_image_folder(
+            src_data_dir_path=subdir,
+            dst_data_dir_path=dst_dir_path,
+            image_size=image_size,
+            class_size=class_size,
+            temp_dir_path=temp_dir
+        )
+        
+
 if __name__ == '__main__':
-    # TODO: Use non-debug values
+    parser = argparse.ArgumentParser(description='Generate dataset.')
+    parser.add_argument(
+        '-i', '--input', dest='input_dir', required=True,
+        help='Source dataset'
+    )
+    parser.add_argument(
+        '-o', '--output', dest='output_dir', required=True,
+        help='Output directory'
+    )
+    parser.add_argument(
+        '-c', '--class-size', dest='class_size', type=int, required=True,
+        help='Number of images per class to augment up to'
+    )
+    parser.add_argument(
+        '-t', '--temp-dir', dest='temp_dir', default='C:\\data\\temp\\',
+        help='Temporary working directory'
+    )
+    args = parser.parse_args()
+    
+    # Main logic
     generate_dataset(
-        src_data_dir_path='C:\\data\\hotdog_debug\\hotdog',
-        dst_data_dir_path='C:\\data\\temp\\hotdog_debug',
+        src_data_dir_path=args.input_dir,
+        dst_data_dir_path=args.output_dir,
         image_size=(128, 128),
-        class_size=100)
+        class_size=args.class_size,
+        temp_dir=args.temp_dir
+    )
