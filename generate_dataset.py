@@ -17,12 +17,20 @@ def get_current_datetime_str():
     return datetime.datetime.now().strftime('%Y-%m-%d.%H.%M.%S')
 
 
+dst_path_counter = 0
 def get_dst_path(
     src_path,
     dst_dir_path,
     dst_suffix):
+    global dst_path_counter
     src_name = utils.get_filename_without_ext(src_path)
-    dst_name = src_name + dst_suffix
+    dst_name = '{0}_{1:02}{2}'.format(
+        src_name,
+        dst_path_counter,
+        dst_suffix
+    )
+    dst_path_counter = dst_path_counter + 1
+
     return os.path.join(dst_dir_path, dst_name)
 
 
@@ -62,6 +70,7 @@ def transform_image_folder(
         0,
         high=len(image_paths),
         size=class_size - len(image_paths))
+    logger.info('Num rand indices %d', len(random_indices))
     for idx in random_indices:
         src_image_path = image_paths[idx]
         dst_image_path = get_dst_path(
